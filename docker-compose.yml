@@ -1,0 +1,134 @@
+version: "2"
+services:
+
+  mysql:
+    image: mysql:5.7
+    ports:
+      - 3306:3306
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: LoginDatabase
+#    volumes:
+#      - '/opt/datasql:/var/lib/mysql'
+    network_mode: host
+
+  mongo:
+    image: mongo:3.4-jessie
+    ports:
+      - 27017:27017
+    container_name: mongo
+    volumes:
+      - /DB/mongo:/data/db
+    network_mode: host
+
+  apigateway:
+    image: zuul-service
+    build: zuul-gatewayservice/
+    restart: always
+    network_mode: host
+    depends_on:
+    - eurekaserver
+    ports:
+    - 8092:8092
+    expose:
+    - 8092
+
+  eurekaserver:
+    image: eureka-servcie:latest
+    build: eureka-server/
+    restart: always
+    network_mode: host
+    ports:
+    - 9091:9091
+    expose:
+    - 9091
+
+  configserver:
+      image: config-servcie:latest
+      build: config-server/
+      restart: always
+      network_mode: host
+      ports:
+      - 8888:8888
+      expose:
+      - 8888
+
+  delivery-manager-login:
+    image: deliverymanagerlogin:latest
+    build: delivery-manager-login/
+    restart: always
+    network_mode: host
+    depends_on:
+      - mysql
+      - eurekaserver
+      - apigateway
+    ports:
+      - 8808:8808
+    expose:
+      - 8808
+
+  ontrack-delivery-front-end:
+    build: DM-login-angular-master/
+    image: ontrack
+    container_name: ontrack-delivery-front-end
+    network_mode: host
+    hostname: localhost
+    ports:
+      - 4200:4200
+    restart: always
+
+  routing-manager:
+    build: routing-manager/
+    image: routing-manager
+    container_name: routing-manager
+    network_mode: host
+    hostname: localhost
+    depends_on:
+      - mongo
+      - apigateway
+      - eurekaserver
+    expose:
+      - 8010
+    ports:
+      - 8010:8010
+    restart: always
+
+  container-manager-service:
+    build: container-manager-service/
+    image: container-manager-service
+    container_name: container-manager-service
+    network_mode: host
+    hostname: localhost
+    depends_on:
+      - mongo
+      - eurekaserver
+      - apigateway
+    expose:
+      - 8011
+    ports:
+      - 8011:8011
+    restart: always
+
+  delivery-manager:
+    build: delivery-manager/
+    image: delivery-manager
+    container_name: delivery-manager
+    network_mode: host
+    hostname: localhost
+    depends_on:
+      - apigateway
+      - eurekaserver
+    expose:
+      - 8015
+    ports:
+      - 8015:8015
+    restart: always
+
+
+
+
+
+
+
+
